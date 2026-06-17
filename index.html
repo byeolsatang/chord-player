@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chord Player</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Noto+Sans+JP:wght@400;500;700&display=swap');
+:root {
+  --bg: #0a0a0f;
+  --sur: #15151f;
+  --sur2: #1d1d2b;
+  --pink: #ff3c6e;
+  --mint: #4af0c4;
+  --amber: #ffb547;
+  --txt: #eceaf2;
+  --dim: #7e7a92;
+  --line: #ffffff14;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--txt);
+  font-family: 'Space Mono', 'Noto Sans JP', monospace;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+header {
+  width: 100%;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.logo { font-size: 18px; font-weight: 700; color: var(--mint); }
+.logo span { color: var(--pink); }
+.header-right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+
+.layout {
+  width: 100%;
+  max-width: 1100px;
+  padding: 28px 24px 80px;
+  display: grid;
+  grid-template-columns: 1fr 260px;
+  gap: 24px;
+}
+@media (max-width: 700px) { .layout { grid-template-columns: 1fr; } }
+
+.card {
+  background: var(--sur);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.card-header {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+  font-size: 11px;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.editor-col { display: flex; flex-direction: column; gap: 16px; }
+textarea#chord-input {
+  width: 100%;
+  min-height: 150px;
+  background: transparent;
+  border: none; outline: none;
+  resize: vertical;
+  padding: 16px;
+  font-family: 'Space Mono', monospace;
+  font-size: 20px;
+  line-height: 1.8;
+  color: var(--txt);
+}
+textarea#chord-input::placeholder { color: var(--dim); }
+
+.title-row { display: flex; align-items: center; gap: 10px; padding: 0 0 4px; }
+input#prog-title {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  outline: none;
+  color: var(--txt);
+  font-family: inherit;
+  font-size: 15px;
+  padding: 4px 6px;
+  flex: 1;
+}
+input#prog-title::placeholder { color: var(--dim); }
+input#prog-title:focus { border-bottom-color: var(--mint); }
+
+.controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 10px 18px; border-radius: 8px; border: none;
+  cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 700;
+  transition: all 0.15s;
+}
+.btn-play { background: var(--mint); color: #0a0a0f; padding: 11px 24px; font-size: 15px; }
+.btn-play:hover { background: #5fffd4; }
+.btn-play.playing { background: var(--pink); color: #fff; }
+.btn-play.playing:hover { background: #ff5585; }
+.btn-secondary {
+  background: var(--sur2); color: var(--txt);
+  border: 1px solid var(--line);
+}
+.btn-secondary:hover { border-color: var(--mint); color: var(--mint); }
+.btn-save { background: var(--amber); color: #0a0a0f; }
+.btn-save:hover { background: #ffc96e; }
+.spacer { flex: 1; }
+.bpm-control {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--sur); border: 1px solid var(--line);
+  border-radius: 8px; padding: 7px 12px;
+}
+.bpm-label { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; }
+.bpm-value { font-size: 16px; font-weight: 700; min-width: 36px; text-align: center; }
+input[type=range] {
+  -webkit-appearance: none; width: 80px; height: 4px;
+  background: var(--sur2); border-radius: 2px; outline: none;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 13px; height: 13px;
+  border-radius: 50%; background: var(--mint); cursor: pointer;
+}
+.sound-options { display: flex; gap: 6px; }
+.sound-opt {
+  padding: 6px 11px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--sur2);
+  color: var(--dim); font-family: inherit; font-size: 12px; cursor: pointer;
+  transition: all 0.15s;
+}
+.sound-opt.active { border-color: var(--amber); color: var(--amber); background: #ffb54720; }
+
+.chord-display { padding: 16px; }
+.chord-rows { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+.chord-row { display: flex; flex-wrap: wrap; gap: 7px; }
+.chord-pill {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 7px 14px; border-radius: 7px;
+  background: var(--sur2); border: 2px solid transparent;
+  font-size: 15px; font-weight: 700; min-width: 54px;
+  cursor: pointer; transition: all 0.1s; user-select: none;
+}
+.chord-pill:hover { border-color: var(--mint); }
+.chord-pill.active { background: var(--mint); color: #0a0a0f; border-color: var(--mint); transform: scale(1.05); }
+.chord-pill.bar-line {
+  background: transparent; color: var(--dim);
+  min-width: auto; padding: 7px 3px;
+  cursor: default; border: none; font-size: 17px;
+}
+.chord-pill.unknown { opacity: 0.35; }
+.progress-bar { height: 3px; background: var(--sur2); border-radius: 2px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--mint); width: 0%; transition: width 0.1s linear; }
+
+.sidebar { display: flex; flex-direction: column; gap: 16px; }
+.saved-list { list-style: none; padding: 0; }
+.saved-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+  transition: background 0.1s;
+  gap: 8px;
+}
+.saved-item:last-child { border-bottom: none; }
+.saved-item:hover { background: var(--sur2); }
+.saved-item-title { font-size: 13px; font-weight: 700; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.saved-item-date { font-size: 10px; color: var(--dim); flex-shrink: 0; }
+.saved-empty { padding: 20px 16px; color: var(--dim); font-size: 12px; text-align: center; }
+.btn-icon { background: none; border: none; cursor: pointer; color: var(--dim); font-size: 14px; padding: 2px 4px; border-radius: 4px; transition: all 0.1s; }
+.btn-icon:hover { color: var(--pink); }
+
+.toast {
+  position: fixed; bottom: 28px; left: 50%;
+  transform: translateX(-50%) translateY(16px);
+  background: var(--mint); color: #0a0a0f;
+  padding: 9px 18px; border-radius: 8px;
+  font-weight: 700; font-size: 13px;
+  opacity: 0; transition: all 0.2s; pointer-events: none; z-index: 99;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.error { background: var(--pink); color: #fff; }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">chord<span>.</span>play</div>
+  <div class="header-right">
+    <button class="btn btn-secondary" onclick="shareUrl()">🔗 シェア</button>
+  </div>
+</header>
+
+<div class="layout">
+  <div class="editor-col">
+    <div class="title-row">
+      <input id="prog-title" type="text" placeholder="タイトル（任意）" maxlength="80">
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span>コード進行を入力</span>
+        <span style="font-size:10px">スペース区切り &nbsp;|&nbsp; | でバー &nbsp;|&nbsp; 改行でセクション</span>
+      </div>
+      <textarea id="chord-input" placeholder="C Am F G
+Dm7 G7 Cmaj7 C"></textarea>
+    </div>
+    <div class="controls">
+      <button class="btn btn-play" id="play-btn" onclick="togglePlay()">
+        <span id="play-icon">▶</span>
+        <span id="play-label">再生</span>
+      </button>
+      <div class="bpm-control">
+        <span class="bpm-label">BPM</span>
+        <input type="range" id="bpm-range" min="40" max="240" value="80" oninput="updateBpm(this.value)">
+        <span class="bpm-value" id="bpm-display">80</span>
+      </div>
+      <div class="sound-options">
+        <button class="sound-opt active" id="opt-piano" onclick="setSound('piano')">Piano</button>
+        <button class="sound-opt" id="opt-guitar" onclick="setSound('guitar')">Guitar</button>
+        <button class="sound-opt" id="opt-pad" onclick="setSound('pad')">Pad</button>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn btn-save" onclick="saveProgression()">💾 保存</button>
+    </div>
+    <div class="card">
+      <div class="card-header">コード進行</div>
+      <div class="chord-display">
+        <div class="chord-rows" id="chord-rows"></div>
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <div class="card">
+      <div class="card-header">
+        <span>保存済み</span>
+        <button class="btn-icon" title="更新" onclick="loadRecent()">↻</button>
+      </div>
+      <ul class="saved-list" id="saved-list">
+        <li class="saved-empty">まだ保存がありません</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Chord tables ───────────────────────────────────────────────────────────
+const NOTE_MAP = {
+  C:0,'C#':1,Db:1,D:2,'D#':3,Eb:3,E:4,F:5,'F#':6,Gb:6,
+  G:7,'G#':8,Ab:8,A:9,'A#':10,Bb:10,B:11
+};
+const CHORD_TYPES = {
+  '':[0,4,7],'m':[0,3,7],'M':[0,4,7],'maj':[0,4,7],'min':[0,3,7],
+  '5':[0,7],'sus2':[0,2,7],'sus4':[0,5,7],'dim':[0,3,6],'aug':[0,4,8],
+  '7':[0,4,7,10],'maj7':[0,4,7,11],'M7':[0,4,7,11],'m7':[0,3,7,10],
+  'min7':[0,3,7,10],'mM7':[0,3,7,11],'dim7':[0,3,6,9],'m7b5':[0,3,6,10],
+  '9':[0,4,7,10,14],'maj9':[0,4,7,11,14],'m9':[0,3,7,10,14],
+  'add9':[0,4,7,14],'6':[0,4,7,9],'m6':[0,3,7,9],
+  '7sus4':[0,5,7,10],'7b5':[0,4,6,10],'7#5':[0,4,8,10],
+};
+
+function parseChordName(name) {
+  const noSlash = name.split('/')[0];
+  let root = noSlash[0].toUpperCase();
+  let rest = noSlash.slice(1);
+  if (rest[0] === '#' || rest[0] === 'b') { root += rest[0]; rest = rest.slice(1); }
+  const rootMidi = NOTE_MAP[root];
+  if (rootMidi === undefined) return null;
+  const intervals = CHORD_TYPES[rest] ?? CHORD_TYPES[''];
+  return intervals.map(i => rootMidi + i + 48); // C3 base
+}
+
+// ── Audio engine ───────────────────────────────────────────────────────────
+let audioCtx = null;
+let reverbBuf = null;
+let masterComp = null;
+let soundType = 'piano';
+
+function getCtx() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    masterComp = audioCtx.createDynamicsCompressor();
+    masterComp.threshold.value = -12;
+    masterComp.knee.value = 6;
+    masterComp.ratio.value = 4;
+    masterComp.attack.value = 0.003;
+    masterComp.release.value = 0.25;
+    masterComp.connect(audioCtx.destination);
+    buildReverb(audioCtx);
+  }
+  return audioCtx;
+}
+
+function buildReverb(ctx) {
+  const sr = ctx.sampleRate;
+  const len = sr * 2.8;
+  const buf = ctx.createBuffer(2, len, sr);
+  for (let c = 0; c < 2; c++) {
+    const d = buf.getChannelData(c);
+    for (let i = 0; i < len; i++) {
+      // exponential decay with late reflections
+      const env = Math.pow(1 - i / len, 2.5);
+      d[i] = (Math.random() * 2 - 1) * env;
+    }
+  }
+  reverbBuf = buf;
+}
+
+function makeReverb(ctx) {
+  const conv = ctx.createConvolver();
+  conv.buffer = reverbBuf;
+  return conv;
+}
+
+function midiToFreq(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+
+// ── Piano ──────────────────────────────────────────────────────────────────
+// Additive synthesis: fundamental + harmonics with individual envelopes
+function playPiano(ctx, midi, startTime, duration) {
+  const freq = midiToFreq(midi);
+  const rv = makeReverb(ctx);
+  const rvGain = ctx.createGain();
+  rvGain.gain.value = 0.18;
+  rv.connect(rvGain);
+  rvGain.connect(masterComp);
+
+  // Harmonic series: [partial, relative_amplitude, decay_multiplier]
+  const partials = [
+    [1,   1.00, 1.0],
+    [2,   0.50, 0.7],
+    [3,   0.25, 0.5],
+    [4,   0.12, 0.4],
+    [5,   0.06, 0.3],
+    [6,   0.03, 0.25],
+    [7,   0.015,0.2],
+  ];
+
+  partials.forEach(([h, amp, decayMul]) => {
+    // Piano stretch: higher harmonics are slightly sharp
+    const stretchedFreq = freq * h * (1 + (h - 1) * 0.0003);
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = stretchedFreq;
+
+    const g = ctx.createGain();
+    const decayTime = (duration + 0.8) * decayMul;
+    const peakAmp = amp * 0.18;
+    g.gain.setValueAtTime(0, startTime);
+    g.gain.linearRampToValueAtTime(peakAmp, startTime + 0.006);
+    g.gain.exponentialRampToValueAtTime(peakAmp * 0.35, startTime + 0.08);
+    g.gain.exponentialRampToValueAtTime(0.00001, startTime + decayTime + 0.5);
+
+    osc.connect(g);
+    g.connect(masterComp);
+    g.connect(rvGain); // send to reverb
+
+    osc.start(startTime);
+    osc.stop(startTime + decayTime + 0.6);
+  });
+}
+
+// ── Guitar ─────────────────────────────────────────────────────────────────
+// Plucked string: harmonic sines with fast pluck envelope
+function playGuitar(ctx, midi, startTime, duration) {
+  const freq = midiToFreq(midi);
+  const rv = makeReverb(ctx);
+  const rvGain = ctx.createGain();
+  rvGain.gain.value = 0.12;
+  rv.connect(rvGain);
+  rvGain.connect(masterComp);
+
+  // Guitar harmonic profile (odd harmonics stronger than piano)
+  const partials = [
+    [1, 1.0,  2.0],
+    [2, 0.7,  1.4],
+    [3, 0.5,  1.0],
+    [4, 0.3,  0.7],
+    [5, 0.15, 0.5],
+    [6, 0.08, 0.35],
+    [7, 0.04, 0.25],
+    [8, 0.02, 0.18],
+  ];
+
+  partials.forEach(([h, amp, decaySec]) => {
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = freq * h;
+
+    // Add slight noise attack for string pluck character
+    const g = ctx.createGain();
+    const peakAmp = amp * 0.14;
+    g.gain.setValueAtTime(0, startTime);
+    g.gain.linearRampToValueAtTime(peakAmp, startTime + 0.002); // very fast attack
+    g.gain.exponentialRampToValueAtTime(0.00001, startTime + decaySec);
+
+    osc.connect(g);
+    g.connect(masterComp);
+    g.connect(rvGain);
+
+    osc.start(startTime);
+    osc.stop(startTime + decaySec + 0.05);
+  });
+
+  // Body resonance: subtle noise burst
+  const noiseLen = Math.floor(ctx.sampleRate * 0.04);
+  const noiseBuf = ctx.createBuffer(1, noiseLen, ctx.sampleRate);
+  const nd = noiseBuf.getChannelData(0);
+  for (let i = 0; i < noiseLen; i++) nd[i] = (Math.random() * 2 - 1) * (1 - i / noiseLen);
+  const noiseSrc = ctx.createBufferSource();
+  noiseSrc.buffer = noiseBuf;
+  const noiseFilter = ctx.createBiquadFilter();
+  noiseFilter.type = 'bandpass';
+  noiseFilter.frequency.value = freq * 1.5;
+  noiseFilter.Q.value = 0.8;
+  const noiseGain = ctx.createGain();
+  noiseGain.gain.value = 0.04;
+  noiseSrc.connect(noiseFilter);
+  noiseFilter.connect(noiseGain);
+  noiseGain.connect(masterComp);
+  noiseSrc.start(startTime);
+  noiseSrc.stop(startTime + 0.05);
+}
+
+// ── Pad ────────────────────────────────────────────────────────────────────
+// Lush synth pad: detuned saws + LFO chorus + heavy reverb
+function playPad(ctx, midi, startTime, duration) {
+  const freq = midiToFreq(midi);
+  const rv = makeReverb(ctx);
+  const rvGain = ctx.createGain();
+  rvGain.gain.value = 0.5;
+  rv.connect(rvGain);
+  rvGain.connect(masterComp);
+
+  const masterGain = ctx.createGain();
+  const att = 0.35, rel = 0.6;
+  masterGain.gain.setValueAtTime(0, startTime);
+  masterGain.gain.linearRampToValueAtTime(1, startTime + att);
+  masterGain.gain.setValueAtTime(1, startTime + duration - rel);
+  masterGain.gain.linearRampToValueAtTime(0, startTime + duration + rel);
+  masterGain.connect(masterComp);
+  masterGain.connect(rvGain);
+
+  // 6 detuned oscillators (3 pairs)
+  const detuneAmounts = [-8, -3, 0, 0, 3, 8]; // cents
+  const oscTypes = ['sawtooth','sawtooth','sawtooth','square','sawtooth','sawtooth'];
+
+  detuneAmounts.forEach((detuneCents, i) => {
+    const osc = ctx.createOscillator();
+    osc.type = oscTypes[i];
+    osc.frequency.value = freq;
+    osc.detune.value = detuneCents;
+
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 900 + i * 120;
+    lp.Q.value = 0.5;
+
+    // LFO for each voice (slightly different rates = natural chorus)
+    const lfo = ctx.createOscillator();
+    lfo.type = 'sine';
+    lfo.frequency.value = 0.3 + i * 0.07;
+    const lfoGain = ctx.createGain();
+    lfoGain.gain.value = 4; // cents depth
+    lfo.connect(lfoGain);
+    lfoGain.connect(osc.detune);
+
+    const g = ctx.createGain();
+    g.gain.value = 0.08 / detuneAmounts.length;
+
+    osc.connect(lp);
+    lp.connect(g);
+    g.connect(masterGain);
+
+    osc.start(startTime);
+    lfo.start(startTime);
+    osc.stop(startTime + duration + rel + 0.1);
+    lfo.stop(startTime + duration + rel + 0.1);
+  });
+}
+
+// ── Play chord ─────────────────────────────────────────────────────────────
+function playChord(midiNotes, duration) {
+  const ctx = getCtx();
+  ctx.resume();
+  const now = ctx.currentTime + 0.02; // small scheduling buffer
+
+  midiNotes.forEach((midi, idx) => {
+    const stagger = soundType === 'guitar' ? idx * 0.045 : 0;
+    const t = now + stagger;
+    if (soundType === 'piano')       playPiano(ctx, midi, t, duration);
+    else if (soundType === 'guitar') playGuitar(ctx, midi, t, duration);
+    else                             playPad(ctx, midi, t, duration);
+  });
+}
+
+// ── Parser / Render ────────────────────────────────────────────────────────
+let playSequence = [];
+
+function parseInput(text) {
+  return text.trim().split('\n')
+    .map(line => line.trim().split(/\s+/).map(t => ({
+      raw: t, isBar: t === '|', midi: t === '|' ? null : parseChordName(t),
+    }))).filter(r => r.some(t => !t.isBar && t.raw));
+}
+
+function renderChords() {
+  const rows = parseInput(document.getElementById('chord-input').value || '');
+  const container = document.getElementById('chord-rows');
+  container.innerHTML = '';
+  playSequence = [];
+
+  rows.forEach(row => {
+    const rowEl = document.createElement('div');
+    rowEl.className = 'chord-row';
+    row.forEach(token => {
+      const pill = document.createElement('div');
+      if (token.isBar) {
+        pill.className = 'chord-pill bar-line';
+        pill.textContent = '|';
+      } else {
+        pill.className = 'chord-pill' + (token.midi ? '' : ' unknown');
+        pill.textContent = token.raw;
+        pill.dataset.idx = playSequence.length;
+        pill.title = token.midi ? '' : '認識できないコード';
+        pill.onclick = () => { if (token.midi) playChord(token.midi, 60 / bpm); };
+        playSequence.push({ midi: token.midi });
+      }
+      rowEl.appendChild(pill);
+    });
+    container.appendChild(rowEl);
+  });
+}
+
+// ── Playback ───────────────────────────────────────────────────────────────
+let bpm = 80, playing = false, playTimeout = null, playIndex = 0;
+
+function updateBpm(v) {
+  bpm = parseInt(v);
+  document.getElementById('bpm-display').textContent = v;
+}
+function setSound(type) {
+  soundType = type;
+  document.querySelectorAll('.sound-opt').forEach(b => b.classList.remove('active'));
+  document.getElementById('opt-' + type).classList.add('active');
+}
+function togglePlay() {
+  if (playing) stopPlay(); else startPlay();
+}
+function startPlay() {
+  if (!playSequence.length) { showToast('コードが見つかりません', true); return; }
+  getCtx(); // init audio context on user gesture
+  playing = true; playIndex = 0;
+  document.getElementById('play-btn').classList.add('playing');
+  document.getElementById('play-icon').textContent = '■';
+  document.getElementById('play-label').textContent = '停止';
+  scheduleNext();
+}
+function stopPlay() {
+  playing = false; clearTimeout(playTimeout);
+  document.getElementById('play-btn').classList.remove('playing');
+  document.getElementById('play-icon').textContent = '▶';
+  document.getElementById('play-label').textContent = '再生';
+  setActiveChord(-1);
+  document.getElementById('progress-fill').style.width = '0%';
+}
+function scheduleNext() {
+  if (!playing) return;
+  const item = playSequence[playIndex];
+  const dur = 60 / bpm;
+  setActiveChord(playIndex);
+  document.getElementById('progress-fill').style.width =
+    ((playIndex + 1) / playSequence.length * 100) + '%';
+  if (item.midi) playChord(item.midi, dur);
+  playIndex = (playIndex + 1) % playSequence.length;
+  playTimeout = setTimeout(scheduleNext, dur * 1000);
+}
+function setActiveChord(idx) {
+  document.querySelectorAll('.chord-pill[data-idx]').forEach(el => {
+    el.classList.toggle('active', parseInt(el.dataset.idx) === idx);
+  });
+}
+
+// ── Save / Load ────────────────────────────────────────────────────────────
+async function saveProgression() {
+  const chords = document.getElementById('chord-input').value.trim();
+  if (!chords) { showToast('コードを入力してください', true); return; }
+  const title = document.getElementById('prog-title').value.trim() || 'Untitled';
+  try {
+    const res = await fetch('/api/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, chords, bpm, sound: soundType }),
+    });
+    const data = await res.json();
+    if (data.id) {
+      showToast('保存しました！');
+      history.replaceState(null, '', '?id=' + data.id);
+      loadRecent();
+    } else {
+      showToast('保存に失敗しました', true);
+    }
+  } catch(e) {
+    showToast('サーバーに接続できません', true);
+  }
+}
+
+async function loadById(id) {
+  try {
+    const res = await fetch('/api/load/' + id);
+    if (!res.ok) { showToast('見つかりません', true); return; }
+    const data = await res.json();
+    document.getElementById('chord-input').value = data.chords;
+    document.getElementById('prog-title').value = data.title || '';
+    if (data.bpm) {
+      bpm = data.bpm;
+      document.getElementById('bpm-range').value = bpm;
+      document.getElementById('bpm-display').textContent = bpm;
+    }
+    if (data.sound) setSound(data.sound);
+    renderChords();
+    if (playing) stopPlay();
+    history.replaceState(null, '', '?id=' + id);
+  } catch(e) {
+    showToast('読み込みに失敗しました', true);
+  }
+}
+
+async function loadRecent() {
+  try {
+    const res = await fetch('/api/recent');
+    const list = await res.json();
+    const ul = document.getElementById('saved-list');
+    if (!list.length) {
+      ul.innerHTML = '<li class="saved-empty">まだ保存がありません</li>';
+      return;
+    }
+    ul.innerHTML = list.map(item => {
+      const date = new Date(item.createdAt).toLocaleDateString('ja-JP',
+        {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+      return `<li class="saved-item" onclick="loadById('${item.id}')">
+        <span class="saved-item-title">${escHtml(item.title)}</span>
+        <span class="saved-item-date">${date}</span>
+      </li>`;
+    }).join('');
+  } catch(e) {}
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Share ──────────────────────────────────────────────────────────────────
+function shareUrl() {
+  navigator.clipboard.writeText(location.href).then(() => showToast('URLをコピーしました！'));
+}
+
+// ── Toast ──────────────────────────────────────────────────────────────────
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.toggle('error', isError);
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+document.getElementById('chord-input').addEventListener('input', () => {
+  if (playing) stopPlay();
+  renderChords();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === ' ' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+    e.preventDefault(); togglePlay();
+  }
+});
+
+const idParam = new URLSearchParams(location.search).get('id');
+if (idParam) {
+  loadById(idParam);
+} else {
+  document.getElementById('chord-input').value = 'C Am F G\nDm7 G7 Cmaj7 C\nAm Em F G';
+  renderChords();
+}
+loadRecent();
+</script>
+</body>
+</html>
