@@ -1,5 +1,7 @@
-const { kv } = require('@vercel/kv');
+const { Redis } = require('@upstash/redis');
 const crypto = require('crypto');
+
+const redis = Redis.fromEnv();
 
 function randomId() {
   return crypto.randomBytes(4).toString('base64url').slice(0, 6);
@@ -14,8 +16,7 @@ module.exports = async function handler(req, res) {
   }
 
   let id = randomId();
-  // collision avoidance
-  while (await kv.exists(`prog:${id}`)) id = randomId();
+  while (await redis.exists(`prog:${id}`)) id = randomId();
 
   const item = {
     id,
@@ -26,9 +27,9 @@ module.exports = async function handler(req, res) {
     createdAt: new Date().toISOString(),
   };
 
-  await kv.set(`prog:${id}`, JSON.stringify(item));
-  await kv.lpush('recent', id);
-  await kv.ltrim('recent', 0, 99);
+  await redis.set(`prog:${id}`, JSON.stringify(item));
+  await redis.lpush('recent', id);
+  await redis.ltrim('recent', 0, 99);
 
   return res.status(200).json({ id });
 };

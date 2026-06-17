@@ -1,10 +1,12 @@
-const { kv } = require('@vercel/kv');
+const { Redis } = require('@upstash/redis');
+
+const redis = Redis.fromEnv();
 
 module.exports = async function handler(req, res) {
   const { id } = req.query;
   if (!id) return res.status(400).json({ error: 'id required' });
 
-  const raw = await kv.get(`prog:${id}`);
+  const raw = await redis.get(`prog:${id}`);
   if (!raw) return res.status(404).json({ error: 'not found' });
 
   const item = typeof raw === 'string' ? JSON.parse(raw) : raw;
